@@ -13,7 +13,7 @@ pipeline {
     stages {
         stage('Git Checkout') {
             steps {
-               git branch: 'main', url: 'https://github.com/khushboo-sah/3-Tier-Project-Jenkins-CI-Pipeline.git'
+               git branch: 'docker-build-deploy', url: 'https://github.com/khushboo-sah/3-Tier-DevSecOps-Mega-Project.git'
             }
         }
         
