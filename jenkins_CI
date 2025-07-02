@@ -1,0 +1,111 @@
+pipeline {
+    agent any
+    
+    tools {
+        nodejs 'nodejs23'
+    }
+    
+    environment {
+    SCANNER_HOME = tool 'sonar-scanner'
+}
+
+
+    stages {
+        stage('Git Checkout') {
+            steps {
+               git branch: 'main', url: 'https://github.com/khushboo-sah/3-Tier-Project-Jenkins-CI-Pipeline.git'
+            }
+        }
+        
+        stage('Frontend Compilation') {
+            steps {
+                dir('client') {
+                // some block
+             sh 'find . -name "*.js" -exec node --check {} +'
+
+             }
+           }
+        }
+        
+        stage('Backend Compilation') {
+            steps {
+                dir('api') {
+                // some block
+             sh 'find . -name "*.js" -exec node --check {} +'
+
+             }
+           }
+        }
+        
+        stage('GitLeaks Scan') {
+            steps {
+               sh 'gitleaks detect --source ./client --exit-code 1 '
+               sh 'gitleaks detect --source ./api --exit-code 1 '
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            steps {
+               withSonarQubeEnv('sonar') {
+                sh '''
+                ${SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectName=Nodejs-Project \
+                -Dsonar.projectKey=Nodejs-Project ''' 
+               }
+            }
+        }
+        
+         stage('Quality Gate Check') {
+            steps {
+               timeout(time: 1, unit: 'HOURS') {
+               waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+}
+            }
+        }
+    
+        stage('Trivy FS Scan') {
+            steps {
+               sh ' trivy fs --format table -o fs-report.html .'
+            }
+        }
+        
+        
+       stage('Build Tag & push backend DockerImage') {
+    steps {
+        script {
+            withDockerRegistry(credentialsId: 'in30minthing') {
+                dir('api') {
+                    sh 'docker build -t in30minthing/backend:latest .'
+                    sh 'trivy image --format table -o backend-image-report.html in30minthing/backend:latest'
+                    sh 'docker push in30minthing/backend:latest'
+                }
+            }
+        }
+    }
+}
+
+        stage('Build Tag & push frontend DockerImage') {
+    steps {
+        script {
+            withDockerRegistry(credentialsId: 'in30minthing') {
+                dir('client') {
+                    sh 'docker build -t in30minthing/frontend:latest .'
+                    sh 'trivy image --format table -o frontend-image-report.html in30minthing/frontend:latest'
+                    sh 'docker push in30minthing/frontend:latest'
+                }
+            }
+        }
+    }
+}
+
+        
+        stage('Docker deploy via compose') {
+            steps {
+               script {
+                   sh 'docker-compose up -d'
+               }
+            }
+        }
+        
+       
+    }
+}
