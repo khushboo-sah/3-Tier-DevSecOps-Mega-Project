@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Git Checkout') {
             steps {
-                git branch: 'docker-build-deploy', url: 'https://github.com/jaiswaladi246/3-Tier-DevSecOps-Mega-Project.git'
+                git branch: 'deploy-to-dev-k8', url: 'https://github.com/jaiswaladi246/3-Tier-DevSecOps-Mega-Project.git'
             }
         }
         
@@ -89,13 +89,33 @@ pipeline {
             }
              
         }  
-        stage('Docker Deploy via Compose') {
+        
+        stage('K8-deploy') {
             steps {
                 script {
-                    sh 'docker-compose up -d'
+                    withKubeConfig(caCertificate: '', clusterName: 'devopsshack-cluster', contextName: '', credentialsId: 'k8-token', namespace: 'dev', restrictKubeConfigAccess: false, serverUrl: 'https://042CDFB283295491DDF7A7A422346F3B.gr7.ap-south-1.eks.amazonaws.com') {
+                            sh 'kubectl apply -f k8s/sc.yaml -n dev'
+                            sh 'kubectl apply -f k8s/mysql.yaml -n dev'
+                            sh 'kubectl apply -f k8s/backend.yaml -n dev'
+                            sh 'kubectl apply -f k8s/frontend.yaml -n dev'
+                            sleep 30
+                        }
                 }
             }
         }
+        
+        stage('verify-K8-deploy') {
+            steps {
+                script {
+                    withKubeConfig(caCertificate: '', clusterName: 'devopsshack-cluster', contextName: '', credentialsId: 'k8-token', namespace: 'dev', restrictKubeConfigAccess: false, serverUrl: 'https://042CDFB283295491DDF7A7A422346F3B.gr7.ap-south-1.eks.amazonaws.com') {
+                            sh 'kubectl get pods -n dev'
+                            sh 'kubectl get svc -n dev'
+                            
+                        }
+                }
+            }
+        }
+        
             
     }
 }
