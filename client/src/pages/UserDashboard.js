@@ -22,7 +22,7 @@ function UserDashboard() {
 
   const fetchUsers = () => {
     axios
-      .get('/api/users')
+      .get('/users') // ✅ Fixed
       .then(res => setUsers(res.data))
       .catch(err => {
         console.error('Fetch Error:', err);
@@ -32,7 +32,7 @@ function UserDashboard() {
 
   const handleCreate = (userData) => {
     axios
-      .post('/api/users', userData)
+      .post('/users', userData) // ✅ Fixed
       .then(() => {
         fetchUsers();
         setEditingUser(null);
@@ -43,7 +43,7 @@ function UserDashboard() {
   const handleUpdate = (id, userData) => {
     if (user?.role !== 'admin') return;
     axios
-      .put(`/api/users/${id}`, userData)
+      .put(`/users/${id}`, userData) // ✅ Fixed
       .then(() => {
         fetchUsers();
         setEditingUser(null);
@@ -54,7 +54,7 @@ function UserDashboard() {
   const handleDelete = (id) => {
     if (user?.role !== 'admin') return;
     axios
-      .delete(`/api/users/${id}`)
+      .delete(`/users/${id}`) // ✅ Fixed
       .then(fetchUsers)
       .catch(err => console.error('Delete Error:', err));
   };
@@ -64,7 +64,6 @@ function UserDashboard() {
       setEditingUser(selectedUser);
     }
   };
-
 
   return (
     <div className="container fade-in">
@@ -76,7 +75,6 @@ function UserDashboard() {
         </div>
       </div>
 
-      {/* ✅ Form visible for all roles */}
       {(user?.role === 'admin' || user?.role === 'viewer') && (
         <div ref={formRef}>
           <UserForm
@@ -90,7 +88,6 @@ function UserDashboard() {
           />
         </div>
       )}
-
 
       <table className="table">
         <thead>
@@ -127,4 +124,3 @@ function UserDashboard() {
 }
 
 export default UserDashboard;
-
