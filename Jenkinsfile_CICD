@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Git Checkout') {
             steps {
-                git branch: 'deploy-to-dev-k8', url: 'https://github.com/jaiswaladi246/3-Tier-DevSecOps-Mega-Project.git'
+                git branch: 'deploy-to-dev-k8', url: 'https://github.com/khushboo-sah/3-Tier-DevSecOps-Mega-Project.git'
             }
         }
         
@@ -65,9 +65,9 @@ pipeline {
                 script {
                     withDockerRegistry(credentialsId: 'docker-cred') {
                         dir('api') {
-                            sh 'docker build -t adijaiswal/backend:latest .'
-                            sh 'trivy image --format table -o backend-image-report.html adijaiswal/backend:latest '
-                            sh 'docker push adijaiswal/backend:latest'
+                            sh 'docker build -t in30minthing/backend:latest .'
+                            sh 'trivy image --format table -o backend-image-report.html in30minthing/backend:latest '
+                            sh 'docker push in30minthing/backend:latest'
                            
                         }
                     }
@@ -80,24 +80,24 @@ pipeline {
                 script {
                     withDockerRegistry(credentialsId: 'docker-cred') {
                         dir('client') {
-                            sh 'docker build -t adijaiswal/frontend:latest .'
-                            sh 'trivy image --format table -o frontend-image-report.html adijaiswal/frontend:latest '
-                            sh 'docker push adijaiswal/frontend:latest'
+                            sh 'docker build -t in30minthing/frontend:latest .'
+                            sh 'trivy image --format table -o frontend-image-report.html in30minthing/frontend:latest '
+                            sh 'docker push in30minthing/frontend:latest'
                         }
                     }
                 }
             }
              
         }  
-        
         stage('K8-deploy') {
             steps {
                 script {
-                    withKubeConfig(caCertificate: '', clusterName: 'devopsshack-cluster', contextName: '', credentialsId: 'k8-token', namespace: 'dev', restrictKubeConfigAccess: false, serverUrl: 'https://042CDFB283295491DDF7A7A422346F3B.gr7.ap-south-1.eks.amazonaws.com') {
-                            sh 'kubectl apply -f k8s/sc.yaml -n dev'
-                            sh 'kubectl apply -f k8s/mysql.yaml -n dev'
-                            sh 'kubectl apply -f k8s/backend.yaml -n dev'
-                            sh 'kubectl apply -f k8s/frontend.yaml -n dev'
+                   withKubeConfig(caCertificate: '', clusterName: 'devopsshack-cluster', contextName: '', credentialsId: 'k8-token', namespace: 'dev', restrictKubeConfigAccess: false, serverUrl: 'https://359AB10A47F6A45DB0412DE02917A75F.gr7.eu-north-1.eks.amazonaws.com') {
+ 
+                            sh 'kubectl apply -f k8s-dev/sc.yaml -n dev'
+                            sh 'kubectl apply -f k8s-dev/mysql.yaml -n dev'
+                            sh 'kubectl apply -f k8s-dev/backend.yaml -n dev'
+                            sh 'kubectl apply -f k8s-dev/frontend.yaml -n dev'
                             sleep 30
                         }
                 }
@@ -107,7 +107,7 @@ pipeline {
         stage('verify-K8-deploy') {
             steps {
                 script {
-                    withKubeConfig(caCertificate: '', clusterName: 'devopsshack-cluster', contextName: '', credentialsId: 'k8-token', namespace: 'dev', restrictKubeConfigAccess: false, serverUrl: 'https://042CDFB283295491DDF7A7A422346F3B.gr7.ap-south-1.eks.amazonaws.com') {
+                    withKubeConfig(caCertificate: '', clusterName: 'devopsshack-cluster', contextName: '', credentialsId: 'k8-token', namespace: 'dev', restrictKubeConfigAccess: false, serverUrl: 'https://359AB10A47F6A45DB0412DE02917A75F.gr7.eu-north-1.eks.amazonaws.com') {
                             sh 'kubectl get pods -n dev'
                             sh 'kubectl get svc -n dev'
                             
@@ -115,6 +115,7 @@ pipeline {
                 }
             }
         }
+        
         
             
     }
