@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
     
@@ -9,6 +8,7 @@ pipeline {
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
     }
+
     stages {
         stage('Git Checkout') {
             steps {
@@ -42,11 +42,13 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonar') {
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=NodeJS-Project \
-                            -Dsonar.projectKey=NodeJS-Project '''
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectName=NodeJS-Project \
+                        -Dsonar.projectKey=NodeJS-Project '''
                 }
             }
         }
+
         stage('Quality Gate Check') {
             steps {
                 timeout(time: 1, unit: 'HOURS') {
@@ -54,6 +56,7 @@ pipeline {
                 }
             }
         }
+
         stage('Trivy FS Scan') {
             steps {
                 sh 'trivy fs --format table -o fs-report.html .'
@@ -66,9 +69,8 @@ pipeline {
                     withDockerRegistry(credentialsId: 'docker-cred') {
                         dir('api') {
                             sh 'docker build -t in30minthing/backend:latest .'
-                            sh 'trivy image --format table -o backend-image-report.html in30minthing/backend:latest '
+                            sh 'trivy image --format table -o backend-image-report.html in30minthing/backend:latest'
                             sh 'docker push in30minthing/backend:latest'
-                           
                         }
                     }
                 }
@@ -81,13 +83,12 @@ pipeline {
                     withDockerRegistry(credentialsId: 'docker-cred') {
                         dir('client') {
                             sh 'docker build -t in30minthing/frontend:latest .'
-                            sh 'trivy image --format table -o frontend-image-report.html in30minthing/frontend:latest '
+                            sh 'trivy image --format table -o frontend-image-report.html in30minthing/frontend:latest'
                             sh 'docker push in30minthing/frontend:latest'
                         }
                     }
                 }
             }
-             
         }  
         
         stage('Manual Approval for Production') {
@@ -98,53 +99,49 @@ pipeline {
             }
         }
         
- stage('Deployment To Prod') {
-    steps {
-        script {
-            withKubeConfig(
-                caCertificate: '',
-                clusterName: 'khushboo-kumari-cluster',
-                contextName: '',
-                credentialsId: 'k8-prod-token',
-                namespace: 'prod',
-                restrictKubeConfigAccess: false,
-                serverUrl: 'https://B39FD5B47A9E5ABA09219750FAC96312.yl4.eu-north-1.eks.amazonaws.com'
-            ) {
-                sh 'kubectl apply -f k8s-prod/sc.yaml'
-                sleep 20
-                sh 'kubectl apply -f k8s-prod/mysql.yaml -n prod'
-                sh 'kubectl apply -f k8s-prod/backend.yaml -n prod'
-                sh 'kubectl apply -f k8s-prod/frontend.yaml -n prod'
-                sh 'kubectl apply -f k8s-prod/ci.yaml'
-                sh 'kubectl apply -f k8s-prod/ingress.yaml -n prod'
-                sleep 30
+        stage('Deployment To Prod') {
+            steps {
+                script {
+                    withKubeConfig(
+                        caCertificate: '',
+                        clusterName: 'khushboo-kumari-cluster',
+                        contextName: '',
+                        credentialsId: 'k8-prod-token',
+                        namespace: 'prod',
+                        restrictKubeConfigAccess: false,
+                        serverUrl: 'https://B39FD5B47A9E5ABA09219750FAC96312.yl4.eu-north-1.eks.amazonaws.com'
+                    ) {
+                        sh 'kubectl apply -f k8s-prod/sc.yaml'
+                        sleep 20
+                        sh 'kubectl apply -f k8s-prod/mysql.yaml -n prod'
+                        sh 'kubectl apply -f k8s-prod/backend.yaml -n prod'
+                        sh 'kubectl apply -f k8s-prod/frontend.yaml -n prod'
+                        sh 'kubectl apply -f k8s-prod/ci.yaml'
+                        sh 'kubectl apply -f k8s-prod/ingress.yaml -n prod'
+                        sleep 30
+                    }
+                }
             }
         }
-    }
-}
 
-stage('Verify Deployment To Prod') {
-    steps {
-        script {
-            withKubeConfig(
-                caCertificate: '',
-                clusterName: 'khushboo-kumari-cluster',
-                contextName: '',
-                credentialsId: 'k8-prod-token',
-                namespace: 'prod',
-                restrictKubeConfigAccess: false,
-                serverUrl: 'https://B39FD5B47A9E5ABA09219750FAC96312.yl4.eu-north-1.eks.amazonaws.com'
-            ) {
-                sh 'kubectl get pods -n prod'
-                sleep 20
-                sh 'kubectl get ingress -n prod'
+        stage('Verify Deployment To Prod') {
+            steps {
+                script {
+                    withKubeConfig(
+                        caCertificate: '',
+                        clusterName: 'khushboo-kumari-cluster',
+                        contextName: '',
+                        credentialsId: 'k8-prod-token',
+                        namespace: 'prod',
+                        restrictKubeConfigAccess: false,
+                        serverUrl: 'https://B39FD5B47A9E5ABA09219750FAC96312.yl4.eu-north-1.eks.amazonaws.com'
+                    ) {
+                        sh 'kubectl get pods -n prod'
+                        sleep 20
+                        sh 'kubectl get ingress -n prod'
+                    }
+                }
             }
         }
-    }
-}
-
-        }
-        
-            
     }
 }
