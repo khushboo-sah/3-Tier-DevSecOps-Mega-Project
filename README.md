@@ -2,7 +2,7 @@
 
 This repository contains a simple Node.js API and a React client used for a user management demo. Follow the steps below to get the project running locally.
 
-## Setup
+## Setup#
 
 1. Install Node.js (version 18 or later is recommended).
 2. Install dependencies for both the API and client:
